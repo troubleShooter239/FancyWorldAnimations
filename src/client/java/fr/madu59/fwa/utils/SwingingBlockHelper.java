@@ -25,10 +25,6 @@ public class SwingingBlockHelper {
         return blockState.getBlock() instanceof ChainBlock && blockState.getValue(ChainBlock.AXIS) == Direction.Axis.Y;
     }
 
-    public static boolean isVerticalChain(Animation animation){
-        return animation instanceof ChainAnimation;
-    }
-
     private static boolean isHangingLantern(BlockState blockState){
         return FancyWorldAnimationsClient.typeOf(blockState) == FancyWorldAnimationsClient.Type.LANTERN && blockState.getValueOrElse(BlockStateProperties.HANGING, false);
     }

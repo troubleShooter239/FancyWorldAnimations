@@ -107,10 +107,6 @@ public class Animation {
         return getAnimDuration();
     }
 
-    public boolean needEndBatch(){
-        return false;
-    }
-
     public double getProgress(double nowTick) {
         double duration = getAnimDuration();
         if (duration <= 0) return 1.0;

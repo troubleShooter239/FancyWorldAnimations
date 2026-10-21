@@ -10,7 +10,6 @@ import net.minecraft.network.chat.Component;
 
 public class SliderBuilder<N extends Number> extends AbstractEntryBuilder{
 
-    private AbstractSliderButton button;
     private final Option<N> option;
     private String indent = "";
     private N min;
@@ -72,7 +71,7 @@ public class SliderBuilder<N extends Number> extends AbstractEntryBuilder{
 
         double initialPosition = (dMax <= dMin) ? 0 : (dCurrent - dMin) / (dMax - dMin);
 
-        button = new AbstractSliderButton(0, 0, 100, 20, 
+        AbstractSliderButton button = new AbstractSliderButton(0, 0, 100, 20,
         Component.literal(option.getValue().toString()), initialPosition){
 
             @Override
