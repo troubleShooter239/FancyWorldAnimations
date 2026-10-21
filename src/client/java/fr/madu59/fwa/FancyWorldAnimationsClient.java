@@ -80,6 +80,8 @@ import net.minecraft.world.phys.Vec3;
 
 public class FancyWorldAnimationsClient implements ClientModInitializer {
 
+	private static final double MAX_ANIMATION_TRACKING_DISTANCE = 250_000_000_000.0; 
+
 	public static final Animations animations = new Animations();
 	private static final long startingTime = System.nanoTime();
 	private static long timer = 0;
@@ -133,13 +135,11 @@ public class FancyWorldAnimationsClient implements ClientModInitializer {
 
 		double startTick = getPartialTick();
 
-		if (animations.containsAt(blockPos)) {
-			Animation animation = animations.getAt(blockPos);
-			if (animation.isUnique()) {
-				startTick = getPartialTick() - animation.getAnimDuration() * (Curves.unease(1 - Curves.ease(animation.getProgress(getPartialTick()), animation.getCurve()), animation.getCurve()));
-				reverseCount = animation.getReverseCount() + 1;
-				animations.removeAt(blockPos);
-			}
+		Animation existingAnimation = animations.getAt(blockPos);
+		if (existingAnimation != null && existingAnimation.isUnique()) {
+			startTick = getPartialTick() - existingAnimation.getAnimDuration() * (Curves.unease(1 - Curves.ease(existingAnimation.getProgress(getPartialTick()), existingAnimation.getCurve()), existingAnimation.getCurve()));
+			reverseCount = existingAnimation.getReverseCount() + 1;
+			animations.removeAt(blockPos);
 		}
 		if(!shouldStartAnimation(oldIsOpen, newIsOpen, type, oldState, newState, blockPos)) return;
 
@@ -148,7 +148,10 @@ public class FancyWorldAnimationsClient implements ClientModInitializer {
 		Animation animation = createAnimation(blockPos, type, startTick, oldIsOpen, newIsOpen, oldState, newState);
 		animation.setReverseCount(reverseCount);
 		Vec3 camPos = Minecraft.getInstance().gameRenderer.mainCamera().position();
-		if((!animation.hasInfiniteAnimation() && camPos.distanceToSqr(Vec3.atCenterOf(blockPos)) > Math.pow(SettingsManager.ANIMATION_RENDER_DISTANCE.getValue(), 2)) || camPos.distanceToSqr(Vec3.atCenterOf(blockPos)) > 500000.0 * 500000.0) return;
+		double distanceToBlockSqr = camPos.distanceToSqr(Vec3.atCenterOf(blockPos));
+		double renderDistance = SettingsManager.ANIMATION_RENDER_DISTANCE.getValue();
+		if ((!animation.hasInfiniteAnimation() && distanceToBlockSqr > renderDistance * renderDistance)
+				|| distanceToBlockSqr > MAX_ANIMATION_TRACKING_DISTANCE) return;
 
 		if (animation.isEnabled(newState)) animations.add(blockPos, animation);
 	}
@@ -178,11 +181,8 @@ public class FancyWorldAnimationsClient implements ClientModInitializer {
 		AnimationRenderer.prepareFrame(context);
 
 		Vec3 camPos = Minecraft.getInstance().gameRenderer.mainCamera().position();
-		float dist = SettingsManager.INFINITE_ANIMATION_RENDER_DISTANCE.getValue();
-		if(context.isShadow()) dist *= SettingsManager.SHADOW_ANIMATION_RENDER_DISTANCE.getValue();
-
-		dist = dist * dist;
-
+		double renderDistance = SettingsManager.INFINITE_ANIMATION_RENDER_DISTANCE.getValue();
+		if(context.isShadow()) renderDistance *= SettingsManager.SHADOW_ANIMATION_RENDER_DISTANCE.getValue();
 		boolean isShadow = context.isShadow();
 		Frustum frustum = context.getFrustum();
 		double nowTick = context.getNowTick();
@@ -191,10 +191,11 @@ public class FancyWorldAnimationsClient implements ClientModInitializer {
 
 			if(!context.isShadow()) animation.tick(nowTick);
             if (!animation.isRendering()) continue;
-            double dx = camPos.x - (animation.getPos().getX() + 0.5);
-            double dy = camPos.y - (animation.getPos().getY() + 0.5);
-            double dz = camPos.z - (animation.getPos().getZ() + 0.5);
-            if (dx * dx + dy * dy + dz * dz > (double)dist) continue;
+            BlockPos pos = animation.getPos();
+            double dx = camPos.x - (pos.getX() + 0.5);
+            double dy = camPos.y - (pos.getY() + 0.5);
+            double dz = camPos.z - (pos.getZ() + 0.5);
+            if (dx * dx + dy * dy + dz * dz > renderDistance * renderDistance) continue;
             if (animation.isOcclusionCulled() && !isShadow) continue;
             if (frustum != null && !frustum.isVisible(animation.getBoundingBox())) continue;
 
@@ -395,7 +396,7 @@ public class FancyWorldAnimationsClient implements ClientModInitializer {
 				BlockPos abovePos = blockPos.above();
 				while(true) {
 					Animation anim = animations.animations.get(abovePos);
-					if (!SwingingBlockHelper.isVerticalChain(anim)) break;
+					if (!(anim instanceof AbstractChainAnimation)) break;
 					anim.markForRemoval();
 					abovePos = abovePos.above();
 				}
@@ -414,7 +415,7 @@ public class FancyWorldAnimationsClient implements ClientModInitializer {
 				BlockPos abovePos = blockPos.above();
 				while(true) {
 					Animation anim = animations.animations.get(abovePos);
-					if (!SwingingBlockHelper.isVerticalChain(anim)) break;
+					if (!(anim instanceof AbstractChainAnimation)) break;
 					anim.markForRemoval();
 					abovePos = abovePos.above();
 				}

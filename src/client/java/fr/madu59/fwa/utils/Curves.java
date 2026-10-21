@@ -2,6 +2,10 @@ package fr.madu59.fwa.utils;
 
 public class Curves {
 
+    private static final int SPRINGY_UNEASE_MAX_ITERATIONS = 8;
+    private static final double SPRINGY_UNEASE_TOLERANCE = 1e-6;
+    private static final double DERIVATIVE_SAMPLE_DELTA = 1e-5;
+
     public static double ease(double t, Enum<?> type, boolean isForward) {
         return isForward? ease(t, type):1-ease(1-t, type);
     }
@@ -58,14 +62,14 @@ public class Curves {
 
     private static double solveSpringyUnease(double target) {
         double x = target;
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < SPRINGY_UNEASE_MAX_ITERATIONS; i++) {
             double current = ease(x, Door.SPRINGY);
             double error = current - target;
-            if (Math.abs(error) < 1e-6) break;
+            if (Math.abs(error) < SPRINGY_UNEASE_TOLERANCE) break;
 
-            double h = 1e-5;
+            double h = DERIVATIVE_SAMPLE_DELTA;
             double derivative = (ease(x + h, Door.SPRINGY) - ease(x - h, Door.SPRINGY)) / (2 * h);
-            if (Math.abs(derivative) < 1e-6) break;
+            if (Math.abs(derivative) < SPRINGY_UNEASE_TOLERANCE) break;
 
             x -= error / derivative;
         }

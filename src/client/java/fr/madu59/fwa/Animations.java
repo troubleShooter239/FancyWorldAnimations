@@ -24,7 +24,7 @@ public class Animations{
         if(animation == null) return;
         LevelExtractor levelExtractor = Minecraft.getInstance().levelExtractor;
         animation.markForRemoval();
-        ((SetSectionDirtyInvoker) levelExtractor).fwa$setSectionDirty(blockPos.getX() >> 4, blockPos.getY() >> 4, blockPos.getZ() >> 4, true);
+		markSectionDirty(levelExtractor, blockPos);
     }
 
     public void clean(double nowTick) {
@@ -43,7 +43,7 @@ public class Animations{
                 }
                 else if (animation.isFinished(nowTick)) {
                     animation.markForRemoval();
-                    ((SetSectionDirtyInvoker) levelExtractor).fwa$setSectionDirty(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4, true);
+					markSectionDirty(levelExtractor, pos);
                 }
             }
             else{
@@ -51,6 +51,11 @@ public class Animations{
             }
         }
     }
+
+	private static void markSectionDirty(LevelExtractor levelExtractor, BlockPos pos) {
+		((SetSectionDirtyInvoker) levelExtractor).fwa$setSectionDirty(
+				pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4, true);
+	}
 
     public boolean containsAt(BlockPos blockPos) {
         return this.animations.containsKey(blockPos);
